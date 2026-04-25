@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Farlands</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #000;
+            --text-color: #fff;
+            --glitch-filter: none;
+            --tiktok-red: #fe2c55;
+            --tiktok-cyan: #25f4ee;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Proxima Nova', sans-serif;
+            overflow: hidden;
+            filter: var(--glitch-filter);
+            user-select: none;
+        }
+
+        /* --- LOGIN --- */
+        #login-screen {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 100; background: #000;
+        }
+        .login-logo { font-size: 3.5rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: -2px; }
+        input#username {
+            width: 80%; padding: 16px; margin-bottom: 15px;
+            background: #121212; border: 1px solid #333; color: white; border-radius: 8px;
+        }
+        .login-btn {
+            width: 80%; padding: 14px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;
+        }
+        .btn-anon { background: var(--tiktok-red); color: white; }
+
+        /* --- APP INTERFACE --- */
+        #app-interface { display: none; width: 100%; height: 100%; position: relative; touch-action: none; }
+
+        .top-nav {
+            position: absolute; top: 0; width: 100%;
+            display: flex; justify-content: center; padding: 25px 0; gap: 20px; z-index: 10;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+        }
+        .top-nav span { opacity: 0.6; font-weight: bold; }
+        .top-nav span.active { opacity: 1; border-bottom: 2px solid white; padding-bottom: 4px; }
+
+        #video-container { width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; }
+        #main-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #content-overlay { position: absolute; font-size: 1.4rem; text-align: center; padding: 30px; z-index: 5; pointer-events: none; }
+
+        .side-bar { position: absolute; right: 12px; bottom: 100px; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 10; }
+        .profile-pic { width: 45px; height: 45px; border-radius: 50%; background: #333; border: 2px solid #fff; position: relative; }
+        .action-item { display: flex; flex-direction: column; align-items: center; font-size: 12px; font-weight: bold; }
+        .action-item i { font-size: 30px; margin-bottom: 2px; }
+
+        .video-info { position: absolute; left: 15px; bottom: 80px; max-width: 75%; z-index: 10; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        .video-info h3 { margin: 0 0 5px 0; font-size: 16px; }
+
+        .bottom-nav { position: absolute; bottom: 0; width: 100%; height: 65px; display: flex; justify-content: space-around; align-items: center; background: #000; border-top: 1px solid #111; z-index: 20; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; opacity: 0.6; }
+
+        @keyframes shake {
+            0% { transform: translate(0,0); }
+            10% { transform: translate(-5px, 5px); }
+            30% { transform: translate(5px, -5px); }
+            100% { transform: translate(0,0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-logo">TikTok</div>
+        <input type="text" id="username" placeholder="Nome de usuário...">
+        <button class="login-btn btn-anon" onclick="startApp()">Entrar como Anônimo</button>
+    </div>
+
+    <div id="app-interface">
+        <div class="top-nav">
+            <span>Seguindo</span>
+            <span class="active">Para você</span>
+        </div>
+
+        <div id="video-container">
+            <video id="main-video" autoplay loop playsinline></video>
+            <div id="content-overlay"></div>
+        </div>
+
+        <div class="side-bar">
+            <div class="profile-pic"></div>
+            <div class="action-item"><i class="fa-solid fa-heart"></i><span>18.5K</span></div>
+            <div class="action-item"><i class="fa-solid fa-comment-dots"></i><span>370</span></div>
+            <div class="action-item"><i class="fa-solid fa-share"></i><span>Compartilhar</span></div>
+        </div>
+
+        <div class="video-info">
+            <h3 id="v-user">@usuario</h3>
+            <p id="v-caption">Iniciando feed...</p>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item" style="opacity: 1;"><i class="fa-solid fa-house" style="font-size:20px"></i>Início</div>
+            <div class="nav-item"><i class="fa-solid fa-user-group" style="font-size:20px"></i>Amigos</div>
+            <div class="nav-item"><i class="fa-solid fa-message" style="font-size:20px"></i>Caixa</div>
+            <div class="nav-item"><i class="fa-solid fa-user" style="font-size:20px"></i>Perfil</div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // BANCO DE DADOS DE VÍDEOS (Adicione suas URLs .mp4 aqui)
+        // ============================================================
+        const videos = {
+            normal: [ // Nível 1 a 10
+                "https://files.catbox.moe/lp1n22.mp4", "https://files.catbox.moe/fro6m6.mp4", "https://files.catbox.moe/xyz1ir.mp4", "https://files.catbox.moe/d3wc3y.mp4", "https://files.catbox.moe/ne9d81.mp4",
+                "https://files.catbox.moe/ne9d81.mp4", "https://files.catbox.moe/f5gxw5.mp4", "https://files.catbox.moe/6r4jru.mp4", "https://files.catbox.moe/8jhcnm.mp4", "https://files.catbox.moe/5dxerz.mp4"
+            ],
+            estranho: [ // Nível 11 a 25
+                "https://files.catbox.moe/9iofig.mp4", "https://files.catbox.moe/tvmr8v.mp4", "https://files.catbox.moe/87538e.mp4" // Adicione até 15 vídeos
+            ],
+            corrupcao: [ // Nível 26 a 40
+                "https://files.catbox.moe/uhmyes.mp4", "https://files.catbox.moe/0j9nuy.mp4" // Adicione até 15 vídeos
+            ],
+            virus: [ // Nível 41 a 49
+                "https://files.catbox.moe/9ozuel.mp4" 
+            ],
+            final: "https://files.catbox.moe/ao3mos.mp4" // O vídeo que encerra tudo
+        };
+
+        let swipeCount = 0;
+        let userName = "";
+        let startY = 0;
+
+        function startApp() {
+            userName = document.getElementById('username').value || "User";
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-interface').style.display = 'block';
+            document.getElementById('v-user').innerText = "@" + userName.toLowerCase();
+            nextVideo();
+        }
+
+        const app = document.getElementById('app-interface');
+        app.addEventListener('touchstart', e => { startY = e.touches[0].clientY; });
+        app.addEventListener('touchend', e => { if (startY > e.changedTouches[0].clientY + 60) nextVideo(); });
+        app.addEventListener('mousedown', e => { startY = e.clientY; });
+        app.addEventListener('mouseup', e => { if (startY > e.clientY + 60) nextVideo(); });
+
+        function nextVideo() {
+            swipeCount++;
+            updateUI();
+        }
+
+        function playVideo(url) {
+            const video = document.getElementById('main-video');
+            if (url && url.includes(".mp4")) {
+                video.src = url;
+                video.play().catch(() => console.log("Erro ao dar play"));
+            }
+        }
+
+        function updateUI() {
+            const overlay = document.getElementById('content-overlay');
+            const caption = document.getElementById('v-caption');
+            const body = document.documentElement;
+
+            overlay.innerText = ""; // Limpa textos
+
+            // FASE 1: NORMAL (1-10)
+            if (swipeCount <= 10) {
+                playVideo(videos.normal[swipeCount - 1]);
+                caption.innerText = `Vídeo ${swipeCount} de 10 - Feed Saudável`;
+            } 
+            // FASE 2: ESTRANHO (11-25)
+            else if (swipeCount <= 25) {
+                const idx = (swipeCount - 11) % videos.estranho.length;
+                playVideo(videos.estranho[idx]);
+                caption.innerText = "...";
+                body.style.filter = "grayscale(0.5)";
+            } 
+            // FASE 3: CORRUPÇÃO (26-40)
+            else if (swipeCount <= 40) {
+                const idx = (swipeCount - 26) % videos.corrupcao.length;
+                playVideo(videos.corrupcao[idx]);
+                overlay.innerText = "[!] ERRO DE BUFFER [!]";
+                body.style.setProperty('--glitch-filter', 'invert(1) hue-rotate(90deg)');
+                body.style.animation = "shake 0.1s infinite";
+            } 
+            // FASE 4: O VÍRUS (41-49)
+            else if (swipeCount < 50) {
+                playVideo(videos.virus[0]);
+                overlay.style.color = "red";
+                overlay.innerText = `EU TE VEJO, ${userName.toUpperCase()}`;
+                body.style.setProperty('--glitch-filter', 'contrast(400%) brightness(30%)');
+            } 
+            // FINAL (50)
+            else {
+                playVideo(videos.final);
+                setTimeout(() => {
+                    document.body.innerHTML = "<div style='height:100vh; background:#000; color:red; display:flex; align-items:center; justify-content:center;'><h1>FIM DA LINHA.</h1></div>";
+                }, 5000); // Fecha tudo depois de 5 segundos do vídeo final
+            }
+        }
+    </script>
+</body>
+</html>
