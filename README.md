@@ -6,3 +6,5 @@ tudo é simulado, nada é real, tudo que você ver é fake
 
 créditos:
 créditos para as pessoas que fizeram aqueles vídeos aleatórios que peguei da minha fy do TikTok 
+
+só os vídeos de horror foram feitos por mim
